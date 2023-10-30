@@ -7,14 +7,14 @@ from torch.autograd import Variable
 import torch.utils.data as Data
 
 from midox import midiread, midiwrite
-import pretty_midi
+# import pretty_midi
 import numpy as np
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class NotesGenerationDataset(Data.Dataset):
-    def __init__(self, midi_folder_path, longest_sequence_length=1491):
+    def __init__(self, midi_folder_path, longest_sequence_length=None):
         
         self.midi_folder_path = midi_folder_path
         midi_filenames = os.listdir(midi_folder_path)
