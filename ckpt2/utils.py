@@ -9,6 +9,7 @@ import torch.utils.data as Data
 from midox import midiread, midiwrite
 # import pretty_midi
 import numpy as np
+import onnx
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -132,7 +133,7 @@ def validate(model, valset_loader, criterion_val):
     
     return full_val_loss / (overall_sequence_length * keys_shape)
 
-def train_model(model, lrs_triangular, trainset_loader, criterion, valset_loader, criterion_val, epochs_number=2, wd=0.0, best_val_loss=float("inf"), clip=1.0):
+def train_model(model, lrs_triangular, trainset_loader, criterion, valset_loader, criterion_val, epochs_number=2, wd=0.0, best_val_loss=float("inf"), clip=1.0, save=True):
     loss_list = []
     val_list =[]
     optimizer = torch.optim.Adam(model.parameters(), lr=lrs_triangular[0], weight_decay=wd)
@@ -169,7 +170,28 @@ def train_model(model, lrs_triangular, trainset_loader, criterion, valset_loader
         val_list.append(current_val_loss)
 
         if current_val_loss < best_val_loss:
-            torch.save(model.state_dict(), 'music_model_padfront_regularized.pth')
+            if save:
+                torch.save(model.state_dict(), 'music_model_padfront_regularized.pth')
             best_val_loss = current_val_loss
     
     return best_val_loss
+
+def export_onnx(model, filename, input_shape):
+    model.eval()
+    x = torch.randn(input_shape).to(device)
+    print(x.shape)
+    torch.onnx.export(
+        model, 
+        x, 
+        filename, 
+        verbose=True,
+        input_names=['input'],
+        output_names=['output'],
+        dynamic_axes={'input' : {0 : 'batch_size'},
+                      'output' : {0 : 'batch_size'}}
+    )
+
+    print("Model exported to " + filename)
+    onnx_model = onnx.load(filename)
+    onnx.checker.check_model(onnx_model, full_check=True)
+    print("ONNX Checked Successfully")
