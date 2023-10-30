@@ -9,7 +9,6 @@ import torch.utils.data as Data
 from midox import midiread, midiwrite
 # import pretty_midi
 import numpy as np
-import onnx
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -175,23 +174,3 @@ def train_model(model, lrs_triangular, trainset_loader, criterion, valset_loader
             best_val_loss = current_val_loss
     
     return best_val_loss
-
-def export_onnx(model, filename, input_shape):
-    model.eval()
-    x = torch.randn(input_shape).to(device)
-    print(x.shape)
-    torch.onnx.export(
-        model, 
-        x, 
-        filename, 
-        verbose=True,
-        input_names=['input'],
-        output_names=['output'],
-        dynamic_axes={'input' : {0 : 'batch_size'},
-                      'output' : {0 : 'batch_size'}}
-    )
-
-    print("Model exported to " + filename)
-    onnx_model = onnx.load(filename)
-    onnx.checker.check_model(onnx_model, full_check=True)
-    print("ONNX Checked Successfully")
