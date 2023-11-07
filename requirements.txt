@@ -4,6 +4,7 @@ matplotlib===3.7.2
 midox===0.1.0
 midi2audio===0.1.1
 numpy===1.25.2
+pandas===2.1.2
 pretty-midi===0.2.10
 pytaglib===2.0.0
 scikit-learn===1.2.2
