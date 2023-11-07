@@ -1,0 +1,10 @@
+ipython===8.13.2
+matplotlib===3.7.2
+midox===0.1.0
+midi2audio===0.1.1
+numpy===1.25.2
+pretty-midi===0.2.10
+pytaglib===2.0.0
+sklearn===0.0.post5
+torch===2.0.1
+tqdm===4.65.0
