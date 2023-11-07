@@ -1,4 +1,5 @@
 ipython===8.13.2
+librosa===0.10.1
 matplotlib===3.7.2
 midox===0.1.0
 midi2audio===0.1.1
