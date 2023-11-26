@@ -170,20 +170,21 @@ def validate(model, valset_loader, criterion_val):
     overall_sequence_length = 0.0
     keys_shape = 88
 
-    for batch in tqdm(valset_loader):
-        post_processed_batch_tuple = post_process_sequence_batch(batch)
+    with torch.no_grad():
+        for batch in tqdm(valset_loader):
+            post_processed_batch_tuple = post_process_sequence_batch(batch)
 
-        input_sequences_batch, output_sequences_batch, sequences_lengths = post_processed_batch_tuple
-        output_sequences_batch_var =  Variable(output_sequences_batch.contiguous().view(-1).to(device))
-        input_sequences_batch_var = Variable(input_sequences_batch.to(device))
+            input_sequences_batch, output_sequences_batch, sequences_lengths = post_processed_batch_tuple
+            output_sequences_batch_var =  Variable(output_sequences_batch.contiguous().view(-1).to(device))
+            input_sequences_batch_var = Variable(input_sequences_batch.to(device))
 
-        logits, _ = model(input_sequences_batch_var, sequences_lengths)
+            logits, _ = model(input_sequences_batch_var, sequences_lengths)
 
-        loss = criterion_val(logits, output_sequences_batch_var)
+            loss = criterion_val(logits, output_sequences_batch_var)
 
-        full_val_loss += loss.item()
-        overall_sequence_length += sum(sequences_lengths)
-        keys_shape = input_sequences_batch.shape[2]
+            full_val_loss += loss.item()
+            overall_sequence_length += sum(sequences_lengths)
+            keys_shape = input_sequences_batch.shape[2]
     
     return full_val_loss / (overall_sequence_length * keys_shape)
 
