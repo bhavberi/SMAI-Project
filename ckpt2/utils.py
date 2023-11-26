@@ -6,30 +6,80 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.utils.data as Data
 
-from midox import midiread, midiwrite
-# import pretty_midi
+# from midox import midiread, midiwrite
+import pretty_midi
 import numpy as np
+from sklearn.model_selection import train_test_split
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+MIDI_PIANO_PROGRAMS = 8
+
+def parse_piano(file_path):
+    try:
+        # print("Parsing piano from file:", file_path)
+        midi_data = pretty_midi.PrettyMIDI(file_path)
+    except:
+        # print("Cannot open midi file:", file_path)
+        return None
+    
+    if midi_data==None:
+        raise Exception("midi_data is None")
+
+    instruments_to_remove = []
+
+    for instrument in midi_data.instruments:
+        if instrument.program > MIDI_PIANO_PROGRAMS or instrument.is_drum:
+            instruments_to_remove.append(instrument)
+
+    for i in instruments_to_remove:
+        midi_data.instruments.remove(i)
+
+    return midi_data
 
 class NotesGenerationDataset(Data.Dataset):
-    def __init__(self, midi_folder_path, longest_sequence_length=None):
+
+    def __init__(self, midi_folder_path, longest_sequence_length=None, adl_dataset=False, type='train'):
         
-        self.midi_folder_path = midi_folder_path
-        midi_filenames = os.listdir(midi_folder_path)
+        # self.midi_folder_path = midi_folder_path
         self.longest_sequence_length = longest_sequence_length
 
-        self.midi_full_filenames = list(map(lambda filename: os.path.join(midi_folder_path, filename),midi_filenames))
+        if adl_dataset:
+            assert type in ['train', 'val', 'test']
+            self.midi_full_filenames = []
+
+            for foldername, subfolders, filenames in os.walk(midi_folder_path):
+                for filename in filenames:
+                    file_path = os.path.join(foldername, filename)
+                    if parse_piano(file_path) is not None:
+                        self.midi_full_filenames.append(file_path)
+
+            # Splitting the filenames into train, val, and test sets
+            train_filenames, test_filenames = train_test_split(self.midi_full_filenames, test_size=0.3, random_state=42)
+            val_filenames, test_filenames = train_test_split(test_filenames, test_size=0.5, random_state=42)
+
+            if type=='train':
+                self.midi_full_filenames = train_filenames
+            elif type=='val':
+                self.midi_full_filenames = val_filenames
+            else:
+                self.midi_full_filenames = test_filenames
+        else:
+            midi_filenames = os.listdir(midi_folder_path)
+            self.midi_full_filenames = list(map(lambda filename: os.path.join(midi_folder_path, filename), midi_filenames))
         
         if longest_sequence_length is None:
             self.update_the_max_length()
 
     def midi_filename_to_piano_roll(self, midi_filename):
-        midi_data = midiread(midi_filename, dt=0.3)
-        piano_roll = midi_data.piano_roll.transpose()
-        # midi_data = pretty_midi.PrettyMIDI(midi_filename)
-        # piano_roll = midi_data.get_piano_roll()
+        # # midi_data = midiread(midi_filename, dt=0.3)
+        # piano_roll = midi_data.piano_roll.transpose()
+        midi_data = parse_piano(midi_filename)
+        if midi_data is None:
+            self.midi_full_filenames.remove(midi_filename)
+            return None
+
+        piano_roll = midi_data.get_piano_roll()
 
         # Pressed notes are replaced by 1
         piano_roll[piano_roll > 0] = 1
@@ -48,9 +98,14 @@ class NotesGenerationDataset(Data.Dataset):
     
     
     def update_the_max_length(self):
-        sequences_lengths = map(lambda filename: self.midi_filename_to_piano_roll(filename).shape[1],self.midi_full_filenames)
-        max_length = max(sequences_lengths)
-        self.longest_sequence_length = max_length
+        sequences_lengths = []
+        for filename in self.midi_full_filenames:
+            piano_roll = self.midi_filename_to_piano_roll(filename)
+            if piano_roll is not None:
+                sequences_lengths.append(piano_roll.shape[1])
+        if sequences_lengths:
+            max_length = max(sequences_lengths)
+            self.longest_sequence_length = max_length
                 
     
     def __len__(self):
