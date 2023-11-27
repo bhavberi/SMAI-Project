@@ -5,8 +5,14 @@ import librosa
 from tqdm import tqdm
 import subprocess
 
+make_wav = False
+make_csv = True
+
 def calculate_features(filename):
     y, sr = librosa.load(filename)
+
+    # Time in sec of the file
+    duration = librosa.get_duration(y=y, sr=sr)
 
     # Chroma feature
     chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr)
@@ -55,6 +61,7 @@ def calculate_features(filename):
 
     # Combine all the features into a single list
     features = [
+        duration, 
         chroma_stft_mean, chroma_stft_var, rms_mean, rms_var,
         spectral_centroid_mean, spectral_centroid_var,
         spectral_bandwidth_mean, spectral_bandwidth_var,
@@ -70,45 +77,64 @@ def calculate_features(filename):
 
     return np.array(features)
 
+def count_files(directory):
+    total_files = 0
+
+    for root, dirs, files in os.walk(directory):
+        total_files += len(files)
+
+    return total_files
+
+def main(writer=None):
+    for foldername, subfolders, filenames in os.walk(in_foldername):
+            new_foldername = out_foldername + foldername.replace(in_foldername, '')
+            for filename in filenames:
+                if filename.endswith('.mid'):
+                    os.makedirs(new_foldername, exist_ok=True)
+                    input_file_name = os.path.join(foldername, filename)
+                    output_file_name = os.path.join(new_foldername, filename)
+                    output_file_name = ".".join(output_file_name.split('.')[:-1]) + '.wav'
+
+                    if make_wav:
+                        subprocess.run(['fluidsynth', '-ni', '-g', '3', 'IK_Berlin_Grand_Piano.sf2', input_file_name, '-F', output_file_name])
+                        # print('Converted', output_file_name)
+
+                    if make_csv:
+                        features = calculate_features(output_file_name)
+                        writer.writerow([output_file_name, ] + list(features))
+
+                    tqdm_object.update(1)
+
 subfolder = '/Classical/Classical'
 in_foldername = './adl-piano-midi' + subfolder
 out_foldername = './adl-piano-wav' + subfolder
 csv_path = './csv' + subfolder + '/data.csv'
+tqdm_object = tqdm(total=count_files(in_foldername))
 
-with open(csv_path, 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile, delimiter=',')
-    writer.writerow([
-        'filename', 'chroma_stft_mean', 'chroma_stft_var', 'rms_mean', 'rms_var',
-        'spectral_centroid_mean', 'spectral_centroid_var',
-        'spectral_bandwidth_mean', 'spectral_bandwidth_var',
-        'rolloff_mean', 'rolloff_var',
-        'zero_crossing_rate_mean', 'zero_crossing_rate_var',
-        'harmony_mean', 'harmony_var', 'perceptr_mean', 'perceptr_var',
-        'tempo',
-        'mfccs_mean1', 'mfccs_var1', 'mfccs_mean2', 'mfccs_var2',
-        'mfccs_mean3', 'mfccs_var3', 'mfccs_mean4', 'mfccs_var4',
-        'mfccs_mean5', 'mfccs_var5', 'mfccs_mean6', 'mfccs_var6',
-        'mfccs_mean7', 'mfccs_var7', 'mfccs_mean8', 'mfccs_var8',
-        'mfccs_mean9', 'mfccs_var9', 'mfccs_mean10', 'mfccs_var10',
-        'mfccs_mean11', 'mfccs_var11', 'mfccs_mean12', 'mfccs_var12',
-        'mfccs_mean13', 'mfccs_var13', 'mfccs_mean14', 'mfccs_var14',
-        'mfccs_mean15', 'mfccs_var15', 'mfccs_mean16', 'mfccs_var16',
-        'mfccs_mean17', 'mfccs_var17', 'mfccs_mean18', 'mfccs_var18',
-        'mfccs_mean19', 'mfccs_var19', 'mfccs_mean20', 'mfccs_var20'
-    ])
-    for foldername, subfolders, filenames in tqdm(os.walk(in_foldername)):
-        new_foldername = out_foldername + foldername.replace(in_foldername, '')
-        for filename in filenames:
-            if filename.endswith('.mid'):
-                os.makedirs(new_foldername, exist_ok=True)
-                input_file_name = os.path.join(foldername, filename)
-                output_file_name = os.path.join(new_foldername, filename)
-                output_file_name = ".".join(output_file_name.split('.')[:-1]) + '.wav'
-
-                subprocess.run(['fluidsynth', '-ni', '-g', '3', 'IK_Berlin_Grand_Piano.sf2', input_file_name, '-F', output_file_name])
-                # print('Converted', output_file_name)
-
-                features = calculate_features(output_file_name)
-                writer.writerow([output_file_name, ] + list(features))
+if make_csv:
+    with open(csv_path, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',')
+        writer.writerow([
+            'filename', 'duration', 'chroma_stft_mean', 'chroma_stft_var', 'rms_mean', 'rms_var',
+            'spectral_centroid_mean', 'spectral_centroid_var',
+            'spectral_bandwidth_mean', 'spectral_bandwidth_var',
+            'rolloff_mean', 'rolloff_var',
+            'zero_crossing_rate_mean', 'zero_crossing_rate_var',
+            'harmony_mean', 'harmony_var', 'perceptr_mean', 'perceptr_var',
+            'tempo',
+            'mfccs_mean1', 'mfccs_var1', 'mfccs_mean2', 'mfccs_var2',
+            'mfccs_mean3', 'mfccs_var3', 'mfccs_mean4', 'mfccs_var4',
+            'mfccs_mean5', 'mfccs_var5', 'mfccs_mean6', 'mfccs_var6',
+            'mfccs_mean7', 'mfccs_var7', 'mfccs_mean8', 'mfccs_var8',
+            'mfccs_mean9', 'mfccs_var9', 'mfccs_mean10', 'mfccs_var10',
+            'mfccs_mean11', 'mfccs_var11', 'mfccs_mean12', 'mfccs_var12',
+            'mfccs_mean13', 'mfccs_var13', 'mfccs_mean14', 'mfccs_var14',
+            'mfccs_mean15', 'mfccs_var15', 'mfccs_mean16', 'mfccs_var16',
+            'mfccs_mean17', 'mfccs_var17', 'mfccs_mean18', 'mfccs_var18',
+            'mfccs_mean19', 'mfccs_var19', 'mfccs_mean20', 'mfccs_var20'
+        ])
+        main(writer)
+else:
+    main()
 
 print('Done')
