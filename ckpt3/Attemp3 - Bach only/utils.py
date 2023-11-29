@@ -234,9 +234,11 @@ def train_model(model, lrs_triangular, trainset_loader, criterion, valset_loader
 def test(model, testset_loader):
     model.eval()
     accuracies = []
+    l = len(testset_loader)
 
     with torch.no_grad():
-        for batch in testset_loader:
+        for i, batch in enumerate(testset_loader):
+            print(i, "/", l)
             acc = []
             post_processed_batch_tuple = post_process_sequence_batch(batch)
 
