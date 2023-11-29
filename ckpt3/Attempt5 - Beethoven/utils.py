@@ -230,3 +230,37 @@ def train_model(model, lrs_triangular, trainset_loader, criterion, valset_loader
             best_val_loss = current_val_loss
     
     return best_val_loss
+
+def test(model, testset_loader):
+    model.eval()
+    accuracies = []
+
+    with torch.no_grad():
+        for batch in testset_loader:
+            acc = []
+            post_processed_batch_tuple = post_process_sequence_batch(batch)
+
+            input_sequences_batch, output_sequences_batch, sequences_lengths = post_processed_batch_tuple
+            input_sequences_batch_var = Variable(input_sequences_batch.to(device))
+
+            non_zero_indices = np.argwhere(input_sequences_batch_var.cpu().numpy() > 0)[:, 0]
+
+            for index in tqdm(np.unique(non_zero_indices)):
+                if index >= input_sequences_batch_var.cpu().numpy().shape[0] - 1:
+                    break
+                logits, _ = model(input_sequences_batch_var[index].view(1,1,128), [1], None)
+                probabilities = nn.functional.softmax(logits, dim=1)
+                output = torch.multinomial(probabilities.data, 1).squeeze().unsqueeze(0).unsqueeze(1)
+                output = Variable(output.float())
+
+                a = input_sequences_batch_var.cpu().numpy()[1+index][0]
+                b = output.squeeze(1).cpu().numpy()[0]
+
+                distance = np.sum(a!=b)
+                length = len(a)
+                accuracy = 1 - (distance / length)
+                acc.append(accuracy)
+
+            accuracies.append(np.mean(accuracy))
+    
+    return np.mean(accuracies)
