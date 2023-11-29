@@ -5,7 +5,7 @@ import librosa
 from tqdm import tqdm
 import subprocess
 
-make_wav = False
+make_wav = True
 make_csv = True
 
 def calculate_features(filename):
@@ -86,6 +86,7 @@ def count_files(directory):
     return total_files
 
 def main(writer=None):
+    failed = []
     for foldername, subfolders, filenames in os.walk(in_foldername):
             new_foldername = out_foldername + foldername.replace(in_foldername, '')
             for filename in filenames:
@@ -95,20 +96,26 @@ def main(writer=None):
                     output_file_name = os.path.join(new_foldername, filename)
                     output_file_name = ".".join(output_file_name.split('.')[:-1]) + '.wav'
 
-                    if make_wav:
-                        subprocess.run(['fluidsynth', '-ni', '-g', '1', 'IK_Berlin_Grand_Piano.sf2', input_file_name, '-F', output_file_name])
-                        # print('Converted', output_file_name)
+                    try:
+                        if make_wav:
+                            if not os.path.exists(output_file_name):
+                                subprocess.run(['fluidsynth', '-ni', '-g', '1', 'IK_Berlin_Grand_Piano.sf2', input_file_name, '-F', output_file_name], check=True)
+                            # print('Converted', output_file_name)
 
-                    if make_csv:
-                        features = calculate_features(output_file_name)
-                        writer.writerow([output_file_name, ] + list(features))
+                        if make_csv:
+                            features = calculate_features(output_file_name)
+                            writer.writerow([output_file_name, ] + list(features))
+                    except:
+                        print(input_file_name)
+                        failed.append(input_file_name)
 
                     tqdm_object.update(1)
+    print(failed)
 
-subfolder = '/Classical'
-in_foldername = './midi-Data' + subfolder
-out_foldername = './adl-piano-wav' + subfolder
-csv_path = './csv' + subfolder + '/data.csv'
+subfolder = '\\Classical'
+in_foldername = '.\\midi-Data' + subfolder
+out_foldername = '.\\wav-Data' + subfolder
+csv_path = '.\\csv' + subfolder + '\\data.csv'
 tqdm_object = tqdm(total=count_files(in_foldername))
 
 if make_csv:
