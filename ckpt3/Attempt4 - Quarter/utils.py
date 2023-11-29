@@ -39,12 +39,12 @@ def parse_piano(file_path):
 
 class NotesGenerationDataset(Data.Dataset):
 
-    def __init__(self, midi_folder_path, longest_sequence_length=None, adl_dataset=False, type='train'):
+    def __init__(self, midi_folder_path, longest_sequence_length=None, new_dataset=False, type='train'):
         
         # self.midi_folder_path = midi_folder_path
         self.longest_sequence_length = longest_sequence_length
 
-        if adl_dataset:
+        if new_dataset:
             assert type in ['train', 'val', 'test']
             self.midi_full_filenames = []
 
