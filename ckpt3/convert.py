@@ -106,7 +106,7 @@ def main(writer=None):
                     tqdm_object.update(1)
 
 subfolder = '/Classical'
-in_foldername = './adl-piano-midi' + subfolder
+in_foldername = './midi-Data' + subfolder
 out_foldername = './adl-piano-wav' + subfolder
 csv_path = './csv' + subfolder + '/data.csv'
 tqdm_object = tqdm(total=count_files(in_foldername))
