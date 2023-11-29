@@ -96,7 +96,7 @@ def main(writer=None):
                     output_file_name = ".".join(output_file_name.split('.')[:-1]) + '.wav'
 
                     if make_wav:
-                        subprocess.run(['fluidsynth', '-ni', '-g', '3', 'IK_Berlin_Grand_Piano.sf2', input_file_name, '-F', output_file_name])
+                        subprocess.run(['fluidsynth', '-ni', '-g', '1', 'IK_Berlin_Grand_Piano.sf2', input_file_name, '-F', output_file_name])
                         # print('Converted', output_file_name)
 
                     if make_csv:
@@ -105,7 +105,7 @@ def main(writer=None):
 
                     tqdm_object.update(1)
 
-subfolder = '/Classical/Classical'
+subfolder = '/Classical'
 in_foldername = './adl-piano-midi' + subfolder
 out_foldername = './adl-piano-wav' + subfolder
 csv_path = './csv' + subfolder + '/data.csv'
