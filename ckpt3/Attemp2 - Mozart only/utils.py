@@ -238,7 +238,7 @@ def test(model, testset_loader):
 
     with torch.no_grad():
         for i, batch in enumerate(testset_loader):
-            print(i, "/", l)
+            print(i+1, "/", l)
             acc = []
             post_processed_batch_tuple = post_process_sequence_batch(batch)
 
@@ -265,4 +265,5 @@ def test(model, testset_loader):
 
             accuracies.append(np.mean(accuracy))
     
+    print(np.mean(accuracies))
     return np.mean(accuracies)
