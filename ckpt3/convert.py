@@ -119,6 +119,7 @@ csv_path = '.\\csv' + subfolder + '\\data.csv'
 tqdm_object = tqdm(total=count_files(in_foldername))
 
 if make_csv:
+    os.makedirs(os.path.dirname(csv_path), exist_ok = True)
     with open(csv_path, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
         writer.writerow([
